@@ -1,0 +1,8 @@
+
+services:
+  - type: web
+    name: asistente-partnerco
+    env: python
+    plan: free
+    buildCommand: ""
+    startCommand: python asistente_partnerco.py
