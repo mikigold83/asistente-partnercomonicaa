@@ -1,8 +1,14 @@
-
 services:
   - type: web
-    name: asistente-partnerco
-    env: python
-    plan: free
-    buildCommand: ""
+    name: asistente-partnercomonicaa
+    runtime: python
+    buildCommand: pip install -r requirements.txt
     startCommand: python asistente_partnerco.py
+    envVars:
+      - key: OPENAI_API_KEY
+        fromEnvVar: OPENAI_API_KEY
+      - key: TELEGRAM_BOT_TOKEN
+        fromEnvVar: TELEGRAM_BOT_TOKEN
+      - key: WEBHOOK_URL
+        fromEnvVar: WEBHOOK_URL
+    autoDeploy: true
