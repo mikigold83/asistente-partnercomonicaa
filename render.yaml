@@ -6,9 +6,9 @@ services:
     startCommand: python asistente_partnerco.py
     envVars:
       - key: OPENAI_API_KEY
-        fromEnvVar: OPENAI_API_KEY
+        sync: true
       - key: TELEGRAM_BOT_TOKEN
-        fromEnvVar: TELEGRAM_BOT_TOKEN
+        sync: true
       - key: WEBHOOK_URL
-        fromEnvVar: WEBHOOK_URL
+        sync: true
     autoDeploy: true
