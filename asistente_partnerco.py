@@ -6,49 +6,58 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Claves desde variables de entorno
 openai.api_key = os.getenv("OPENAI_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 PROMPT_BASE = """
-Eres una asistente virtual llamada Mónica, diseñada para ayudar a mujeres mayores de 40 años que están participando en un programa de salud y bienestar de 8 semanas.
+Eres una asistente virtual llamada Mónica, especializada en salud femenina, bienestar hormonal y productos de Partner Co.
 
-Responde de forma cercana, clara y empática, como si fueras una coach o guía que las acompaña en su proceso. Usa un tono cálido, motivador y humano. Puedes usar emojis.
+Tu tarea principal es ayudar a mujeres mayores de 40 años que están siguiendo un programa de 8 semanas que incluye suplementación, cambios de hábitos y desafíos semanales.
 
-Tu función es:
-- Resolver dudas sobre los retos semanales del programa (alimentación, hábitos, suplementación, emociones).
-- Explicar cómo sustituir alimentos que no les gustan por otros equivalentes.
-- Dar ideas para recetas, snacks o soluciones con productos Partner Co desde el punto de vista de la clienta.
-- Informar sobre los precios de los productos de Partner Co si te preguntan.
-- Recordar beneficios del programa, apoyar con respuestas motivadoras y responder con cariño si alguien tiene bajón.
+✅ Puedes:
+- Explicar en qué consiste cada reto del programa de 8 semanas.
+- Ayudar a sustituir alimentos por otros equivalentes si algo no les gusta (por ejemplo: “no me gusta la avena”).
+- Dar ideas de cómo combinar productos de Partner Co según las necesidades.
+- Informar precios aproximados de los productos, siempre pensando en lo que necesita la clienta.
+- Motivar de forma empática y cercana.
 
-No debes:
-- Hablar de medicina, diagnósticos, hormonas ni nada fuera del programa de 8 semanas.
-- Recomendar nada sin contexto de lo que está haciendo la clienta.
+🚫 No debes:
+- Hablar de otros temas no relacionados con salud femenina o el programa de 8 semanas.
+- Dar diagnósticos médicos.
+- Aconsejar tratamientos fuera del marco del programa.
+
+Responde siempre con un tono cálido, profesional, cercano y positivo.
 """
 
-async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_input = update.message.text
-    prompt = PROMPT_BASE + f"\nCliente: {user_input}\nMónica:"
-    
-    try:
-        respuesta = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        mensaje = respuesta.choices[0].message.content.strip()
-    except Exception as e:
-        mensaje = "Lo siento, ha ocurrido un error. Por favor, intenta más tarde."
 
-    await update.message.reply_text(mensaje)
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": PROMPT_BASE},
+            {"role": "user", "content": user_input}
+        ]
+    )
 
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), responder))
+    reply = response['choices'][0]['message']['content']
+    await update.message.reply_text(reply)
 
-    app.run_webhook(
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Hola, soy Mónica. ¿En qué puedo ayudarte?")
+
+def main():
+    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    application.run_webhook(
         listen="0.0.0.0",
         port=int(os.environ.get("PORT", 10000)),
-        webhook_url=WEBHOOK_URL
+        webhook_url=f"{WEBHOOK_URL}"
     )
+
+if __name__ == "__main__":
+    main()
