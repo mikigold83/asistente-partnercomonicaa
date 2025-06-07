@@ -1,19 +1,14 @@
 import os
 import openai
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler,
-    ContextTypes, filters
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Cargar claves
+# Variables de entorno
 openai.api_key = os.getenv("OPENAI_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-WEBHOOK_PATH = "/webhook"  # << Añadido
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # https://asistente-partnercomonicaa.onrender.com/webhook
 
 PROMPT_BASE = """
 Eres una asistente virtual llamada Mónica, diseñada para ayudar a mujeres mayores de 40 años que están participando en un programa de salud y bienestar de 8 semanas.
@@ -29,6 +24,7 @@ Tu función es:
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_input = update.message.text
+
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -36,6 +32,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             {"role": "user", "content": user_input}
         ]
     )
+
     reply = response['choices'][0]['message']['content']
     await update.message.reply_text(reply)
 
@@ -43,16 +40,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hola, soy Mónica. ¿En qué puedo ayudarte?")
 
 def main():
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    app.run_webhook(
+    application.run_webhook(
         listen="0.0.0.0",
         port=int(os.environ.get("PORT", 10000)),
-        webhook_url=WEBHOOK_URL,
-        webhook_path=WEBHOOK_PATH  # ✅ Especificamos /webhook para que Telegram lo reconozca
+        webhook_url=os.getenv("WEBHOOK_URL")
     )
 
 if __name__ == "__main__":
